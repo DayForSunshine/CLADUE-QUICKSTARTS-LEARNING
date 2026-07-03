@@ -4,6 +4,7 @@ import asyncio
 import os
 from contextlib import AsyncExitStack
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from anthropic import Anthropic
@@ -93,7 +94,7 @@ class Agent:
             **self.message_params,
         }
 
-    async def _agent_loop(self, user_input: str) -> list[dict[str, Any]]:
+    async def _agent_loop(self, user_input: str) -> Any:
         """Process user input and handle tool calls in a loop"""
         if self.verbose:
             print(f"\n[{self.name}] Received: {user_input}")
@@ -116,7 +117,7 @@ class Agent:
 
             response = self.client.messages.create(
                 **params,
-                extra_headers=merged_headers
+                extra_headers=merged_headers        #params={..., "betas": ["interleaved-thinking-2025-05-14"]}里传也可,SDK 内部会自动转成请求头。
             )
             tool_calls = [
                 block for block in response.content if block.type == "tool_use"
@@ -136,7 +137,7 @@ class Agent:
                         )
 
             await self.history.add_message(
-                "assistant", response.content, response.usage
+                "assistant", response.content, response.usage   #(role, content, usage)
             )
 
             if tool_calls:
@@ -150,11 +151,11 @@ class Agent:
                             f"\n[{self.name}] Tool result: "
                             f"{block.get('content')}"
                         )
-                await self.history.add_message("user", tool_results)
+                await self.history.add_message("user", tool_results)    #Anthropic API 的约定：tool_result 要以 user 消息的形式回传给模型）。
             else:
                 return response
 
-    async def run_async(self, user_input: str) -> list[dict[str, Any]]:
+    async def run_async(self, user_input: str) -> Any:
         """Run agent with MCP tools asynchronously."""
         async with AsyncExitStack() as stack:
             original_tools = list(self.tools)
@@ -168,6 +169,37 @@ class Agent:
             finally:
                 self.tools = original_tools
 
-    def run(self, user_input: str) -> list[dict[str, Any]]:
+    def run(self, user_input: str) -> Any:
         """Run agent synchronously"""
         return asyncio.run(self.run_async(user_input))
+
+    async def save_session_memory(
+        self,
+        memory_dir: Path | str | None = None,
+        model: str = "claude-haiku-4-5-20251001",
+        verbose: bool = False,
+    ) -> list[Path]:
+        """Summarize this session and persist key memories to Claude Code's memory dir.
+
+        Extracts user preferences, project context, architecture decisions, and key
+        conclusions from the conversation history, then writes them as structured
+        markdown files that Claude Code will load in future sessions.
+
+        Args:
+            memory_dir: Override target directory (defaults to Claude Code project memory).
+            model: Model used for summarization (fast/cheap model recommended).
+            verbose: Print paths of saved memory files.
+
+        Returns:
+            List of Paths for the files written (empty if nothing worth saving).
+        """
+        from agents.memory.session_summarizer import SessionSummarizer
+
+        summarizer = SessionSummarizer(memory_dir=memory_dir)
+        saved = await summarizer.async_save_from_agent(self, model=model, verbose=verbose)
+        if self.verbose or verbose:
+            if saved:
+                print(f"\n[{self.name}] Session memories saved: {[str(p) for p in saved]}")
+            else:
+                print(f"\n[{self.name}] No session memories to save.")
+        return saved

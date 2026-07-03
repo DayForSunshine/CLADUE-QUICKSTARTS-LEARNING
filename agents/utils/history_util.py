@@ -52,7 +52,7 @@ class MessageHistory:
             content = [{"type": "text", "text": content}]
 
         message = {"role": role, "content": content}
-        self.messages.append(message)
+        self.messages.append(message)               #message添加
 
         if role == "assistant" and usage:
             total_input = (
@@ -63,7 +63,7 @@ class MessageHistory:
             output_tokens = usage.output_tokens
 
             current_turn_input = total_input - self.total_tokens
-            self.message_tokens.append((current_turn_input, output_tokens))
+            self.message_tokens.append((current_turn_input, output_tokens))     #message_token添加
             self.total_tokens += current_turn_input + output_tokens
 
     def truncate(self) -> None:

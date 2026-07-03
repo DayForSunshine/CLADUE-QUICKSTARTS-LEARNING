@@ -25,10 +25,10 @@ class MCPConnection(ABC):
 
     async def __aenter__(self):
         """Initialize MCP server connection."""
-        self._rw_ctx = await self._create_rw_context()
-        read_write = await self._rw_ctx.__aenter__()
+        self._rw_ctx = await self._create_rw_context()  #调用子类实现的抽象方法（MCPConnectionStdio 或 MCPConnectionSSE），返回一个异步上下文管理器对象
+        read_write = await self._rw_ctx.__aenter__()  #手动调用 __aenter__ 进入传输层上下文，真正建立底层连接（启动子进程/建立 SSE HTTP 连接）。
         read, write = read_write
-        self._session_ctx = ClientSession(read, write)
+        self._session_ctx = ClientSession(read, write)  #把底层的 read/write 流交给 MCP SDK 的 ClientSession，由它在流上实现完整的 MCP 协议（JSON-RPC 消息序列化/反序列化、请求-响应匹配等）
         self.session = await self._session_ctx.__aenter__()
         await self.session.initialize()
         return self

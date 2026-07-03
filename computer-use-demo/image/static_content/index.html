@@ -28,17 +28,8 @@
     </head>
     <body>
         <div class="container">
-            <iframe
-                src="http://localhost:8501"
-                class="left"
-                allow="fullscreen"
-            ></iframe>
-            <iframe
-                id="vnc"
-                src="http://127.0.0.1:6080/vnc.html?&resize=scale&autoconnect=1&view_only=1&reconnect=1&reconnect_delay=2000"
-                class="right"
-                allow="fullscreen"
-            ></iframe>
+            <iframe id="streamlit" class="left" allow="fullscreen"></iframe>
+            <iframe id="vnc" class="right" allow="fullscreen"></iframe>
             <button
                 id="toggleViewOnly"
                 style="position: absolute; top: 10px; right: 10px; z-index: 1000"
@@ -46,6 +37,14 @@
                 Toggle Screen Control (Off)
             </button>
             <script>
+                var host = window.location.hostname;
+                document.getElementById("streamlit").src =
+                    "http://" + host + ":8501";
+                document.getElementById("vnc").src =
+                    "http://" +
+                    host +
+                    ":6080/vnc.html?&resize=scale&autoconnect=1&view_only=1&reconnect=1&reconnect_delay=2000";
+
                 document
                     .getElementById("toggleViewOnly")
                     .addEventListener("click", function () {
