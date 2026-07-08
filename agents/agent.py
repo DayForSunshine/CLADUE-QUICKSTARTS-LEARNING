@@ -137,7 +137,7 @@ class Agent:
                         )
 
             await self.history.add_message(
-                "assistant", response.content, response.usage   #(role, content, usage)
+                "assistant", response.content, response.usage   #呼应101行
             )
 
             if tool_calls:
@@ -171,7 +171,7 @@ class Agent:
 
     def run(self, user_input: str) -> Any:
         """Run agent synchronously"""
-        return asyncio.run(self.run_async(user_input))
+        return asyncio.run(self.run_async(user_input))  #
 
     async def save_session_memory(
         self,

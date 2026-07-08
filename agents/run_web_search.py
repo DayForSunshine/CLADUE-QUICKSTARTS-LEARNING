@@ -10,7 +10,7 @@ load_dotenv(Path(__file__).parent / ".env")
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from agents.agent import Agent, ModelConfig
-from agents.skills import WebSearchSkill
+from agents.skills import load_skill
 from agents.memory import MemoryManager
 
 MEMORY_DECISION_PROMPT = """\
@@ -119,7 +119,7 @@ async def main(task: str):
     memory_context = memory.load_all()
 
     # 2. 运行搜索 agent
-    skill = WebSearchSkill(max_uses=5)
+    skill = load_skill("web_search.yaml")
     agent = skill.create_agent(verbose=True)
 
     full_task = f"{memory_context}\n\n{task}" if memory_context else task

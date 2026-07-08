@@ -31,7 +31,7 @@ async def execute_tools(
 
     if parallel:
         return await asyncio.gather(
-            *[_execute_single_tool(call, tool_dict) for call in tool_calls]
+            *[_execute_single_tool(call, tool_dict) for call in tool_calls]  #asyncio.gather接收多个独立的协程参数，不接受一个列表，而是接受逐个展开的协程作为位置参数。所以必须用 * 把列表解包
         )
     else:
         return [

@@ -1,0 +1,10 @@
+name: FileOpsAgent
+description: Agent that can read and write files on the local filesystem
+system: |
+  You are a file operations assistant. Use the available tools to read, list,
+  write, and edit files. Always confirm paths before writing.
+model: claude-opus-4-8
+max_tokens: 4096
+tools:
+  - type: file_read
+  - type: file_write

@@ -25,12 +25,12 @@ class MCPConnection(ABC):
 
     async def __aenter__(self):
         """Initialize MCP server connection."""
-        self._rw_ctx = await self._create_rw_context()  #调用子类实现的抽象方法（MCPConnectionStdio 或 MCPConnectionSSE），返回一个异步上下文管理器对象
+        self._rw_ctx = await self._create_rw_context()  #调用子类实现的抽象方法（MCPConnectionStdio 或 MCPConnectionSSE），返回一个异步上下文管理器对象。
         read_write = await self._rw_ctx.__aenter__()  #手动调用 __aenter__ 进入传输层上下文，真正建立底层连接（启动子进程/建立 SSE HTTP 连接）。
-        read, write = read_write
-        self._session_ctx = ClientSession(read, write)  #把底层的 read/write 流交给 MCP SDK 的 ClientSession，由它在流上实现完整的 MCP 协议（JSON-RPC 消息序列化/反序列化、请求-响应匹配等）
-        self.session = await self._session_ctx.__aenter__()
-        await self.session.initialize()
+        read, write = read_write                      #两个异步流，read 用于接收服务器消息，write 用于向服务器发送消息。
+        self._session_ctx = ClientSession(read, write)  #把底层的 read/write 流交给 MCP SDK 的 ClientSession，由它在流上实现完整的 MCP 协议（JSON-RPC 消息序列化/反序列化、请求-响应匹配等）。此时 ClientSession 还未启动。
+        self.session = await self._session_ctx.__aenter__()  #同样手动调用 __aenter__，启动 ClientSession 内部的后台读取循环（开始监听 read 流上的服务器消息）。返回值就是 self.session，即激活状态的 ClientSession 实例，后续 call_tool / list_tools 都通过它发起。
+        await self.session.initialize()  #按 MCP 规范发送 initialize 请求——客户端告知自己的协议版本和能力，服务器回复自己支持的能力。握手完成后连接才正式可用。
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -120,7 +120,7 @@ async def setup_mcp_connections(
 ) -> list[MCPTool]:
     """Set up MCP server connections and create tool interfaces."""
     if not mcp_servers:
-        return []
+        return []          #mcp_servers为空，直接返回不启动任何子进程。比如WebSearchServerTool不是MCP Tool就不走
 
     mcp_tools = []
 
@@ -128,7 +128,7 @@ async def setup_mcp_connections(
         try:
             connection = create_mcp_connection(config)
             await stack.enter_async_context(connection)
-            tool_definitions = await connection.list_tools()
+            tool_definitions = await connection.list_tools()  #这里的list_tools相当于激活后的ClientSesson.list_tools？
 
             for tool_info in tool_definitions:
                 mcp_tools.append(
