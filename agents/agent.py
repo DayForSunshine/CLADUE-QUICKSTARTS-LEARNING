@@ -135,6 +135,23 @@ class Agent:
                             f"\n[{self.name}] Tool call: "
                             f"{block.name}({params_str})"
                         )
+                    elif block.type == "server_tool_use":
+                        # Anthropic 服务端工具调用(如 web_search/code_execution)，由服务器自动执行，不走 execute_tools()
+                        params_str = ", ".join(
+                            [f"{k}={v}" for k, v in block.input.items()]
+                        )
+                        print(
+                            f"\n[{self.name}] Server tool call: "
+                            f"{block.name}({params_str})"
+                        )
+                    elif block.type.endswith("_tool_result"):
+                        # 服务端工具返回，如 web_search_tool_result / code_execution_tool_result
+                        print(
+                            f"\n[{self.name}] Server tool result "
+                            f"({block.type}): {getattr(block, 'content', block)}"
+                        )
+
+            round_chars = len(str(response.content))
 
             await self.history.add_message(
                 "assistant", response.content, response.usage   #呼应101行
@@ -151,8 +168,16 @@ class Agent:
                             f"\n[{self.name}] Tool result: "
                             f"{block.get('content')}"
                         )
+                round_chars += len(str(tool_results))
                 await self.history.add_message("user", tool_results)    #Anthropic API 的约定：tool_result 要以 user 消息的形式回传给模型）。
-            else:
+
+            if self.verbose:  # 139, 156, 159-165新增
+                print(
+                    f"\n[{self.name}] New content this round (approx chars): "
+                    f"{round_chars}"
+                )
+
+            if not tool_calls:  #原来是和126行的if呼应的else
                 return response
 
     async def run_async(self, user_input: str) -> Any:

@@ -57,6 +57,8 @@ async def main(task: str):
         verbose=True,
     )
     response = await agent.run_async(task)
+    print("Total tokens:", agent.history.total_tokens)
+    print("每轮 (input, output):", agent.history.message_tokens)
     print("\n=== Final Answer ===")
     for block in response.content:
         if block.type == "text":
