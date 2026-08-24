@@ -12,7 +12,7 @@ async def _execute_single_tool(
 
     try:
         # Execute the tool directly
-        result = await tool_dict[call.name].execute(**call.input)
+        result = await tool_dict[call.name].execute(**call.input)  #tool_dict可提供的工具列表
         response["content"] = str(result)
     except KeyError:
         response["content"] = f"Tool '{call.name}' not found"
