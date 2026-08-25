@@ -169,7 +169,7 @@ class Agent:
                             f"{block.get('content')}"
                         )
                 round_chars += len(str(tool_results))
-                await self.history.add_message("user", tool_results)    #Anthropic API 的约定：tool_result 要以 user 消息的形式回传给模型）。
+                await self.history.add_message("user", tool_results)    #Anthropic API 的约定：tool_result 要以 user 消息的形式回传给模型。
 
             if self.verbose:  # 139, 156, 159-165新增
                 print(
